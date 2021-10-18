@@ -9,6 +9,7 @@ from influxdb import InfluxDBClient, SeriesHelper
 
 DEFAULT_CONF_FILENAME = "tibberflux.json"
 DEFAULT_TIBBER_URL = "https://api.tibber.com/v1-beta/gql"
+DEFAULT_HOURS = 48
 
 
 class TibberSeriesHelper(SeriesHelper):
@@ -18,32 +19,32 @@ class TibberSeriesHelper(SeriesHelper):
         tags = ["home"]
 
 
-def get_influx_data(url: str, token: str):
+def get_influx_data(url: str, token: str, hours: int):
     headers = {"Authorization": "Bearer " + token}
     transport = RequestsHTTPTransport(url=url, headers=headers)
     client = Client(transport=transport, fetch_schema_from_transport=True)
-    query = gql(
-        """
-    {
-      viewer {
-        homes {
-          consumption(resolution: HOURLY, last: 48, filterEmptyNodes: true) {
-            nodes {
-              from
-              to
-              cost
-              unitPrice
-              unitPriceVAT
-              consumption
-              consumptionUnit
+    gql_query_string = """
+        {
+          viewer {
+            homes {
+              consumption(resolution: HOURLY, last: __LAST__, filterEmptyNodes: true) {
+                nodes {
+                  from
+                  to
+                  cost
+                  unitPrice
+                  unitPriceVAT
+                  consumption
+                  consumptionUnit
+                }
+              }
             }
           }
         }
-      }
-    }
+        """
 
-"""
-    )
+    gql_query_string = gql_query_string.replace("__LAST__", str(hours))
+    query = gql(gql_query_string)
 
     response = client.execute(query)
 
@@ -90,6 +91,15 @@ def main() -> None:
         help="configuration file",
         required=False,
     )
+    parser.add_argument(
+        "--hours",
+        dest="hours",
+        default=DEFAULT_HOURS,
+        metavar="hours",
+        help=f"number of hours to fetch (default {DEFAULT_HOURS})",
+        required=False,
+        type=int,
+    )
     parser.add_argument("--test", dest="test", action="store_true", help="Test mode")
     parser.add_argument(
         "--debug", dest="debug", action="store_true", help="Print debug information"
@@ -122,7 +132,7 @@ def main() -> None:
     tibber_url = tibber_config.get("url", DEFAULT_TIBBER_URL)
     tibber_token = tibber_config["token"]
 
-    data = get_influx_data(url=tibber_url, token=tibber_token)
+    data = get_influx_data(url=tibber_url, token=tibber_token, hours=args.hours)
     tibberflux(client, data)
 
 
