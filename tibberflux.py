@@ -64,10 +64,10 @@ def tibberflux(client, data: List[Dict]) -> None:
         TibberSeriesHelper(
             time=val["from"],
             home=val["home"],
-            cost=val["cost"],
-            consumption=val["consumption"],
-            unitPrice=val["unitPrice"],
-            unitPriceVAT=val["unitPriceVAT"],
+            cost=float(val["cost"]),
+            consumption=float(val["consumption"]),
+            unitPrice=float(val["unitPrice"]),
+            unitPriceVAT=float(val["unitPriceVAT"]),
         )
 
     if client is not None:
