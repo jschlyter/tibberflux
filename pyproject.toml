@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "tibberflux"
-version = "0.0.1"
+version = "0.0.2"
 description = "Tibber to InfluxDB exporter"
 authors = ["Jakob Schlyter <jakob@kirei.se>"]
 
